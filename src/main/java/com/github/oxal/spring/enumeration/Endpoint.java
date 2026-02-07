@@ -13,6 +13,8 @@ import java.lang.annotation.Target;
 @Bean
 public @interface Endpoint {
     String value() default "DEFAULT";
+
     ScopeType scope() default ScopeType.SINGLETON;
+
     String baseUrl() default "";
 }

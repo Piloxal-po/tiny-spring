@@ -1,8 +1,9 @@
-package com.github.oxal.spring.service;
+package com.github.oxal.spring.factory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.oxal.context.Context;
+import com.github.oxal.resolver.BeanDefinitionResolver;
 import com.github.oxal.runner.ApplicationRunner;
 import com.github.oxal.spring.enumeration.Endpoint;
 import com.github.oxal.spring.enumeration.operator.Delete;
@@ -11,27 +12,30 @@ import com.github.oxal.spring.enumeration.operator.Post;
 import com.github.oxal.spring.enumeration.operator.Put;
 import com.github.oxal.spring.enumeration.param.PathParam;
 import com.github.oxal.spring.enumeration.param.QueryParam;
+import com.github.oxal.spring.enumeration.param.RequestBody;
 import com.github.oxal.spring.servlet.TinyResponse;
 import com.github.oxal.spring.servlet.TinyServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
-public class EndPointService {
+public class EndPointFactory {
 
     public static HttpServlet buildEndpoint(Class<?> clazz, Context context) {
-        if (context.getBeanDefinitionKey(clazz, null).isEmpty() || !clazz.isAnnotationPresent(Endpoint.class)) {
+        if (BeanDefinitionResolver.resolve(clazz, null, context) == null || !clazz.isAnnotationPresent(Endpoint.class)) {
             throw new RuntimeException("No endpoint found for class " + clazz.getName());
         }
 
         Object controllerInstance = ApplicationRunner.loadBean(clazz);
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = ApplicationRunner.loadBean(ObjectMapper.class);
         TinyServlet.TinyServletBuilder builder = TinyServlet.builder().objectMapper(objectMapper);
 
         List<TinyServlet.Route> getRoutes = new ArrayList<>();
@@ -89,6 +93,14 @@ public class EndPointService {
                         QueryParam queryParam = param.getAnnotation(QueryParam.class);
                         String value = request.getParameter(queryParam.value());
                         args[i] = convert(value, param.getType(), objectMapper);
+                    } else if (param.isAnnotationPresent(RequestBody.class)) {
+                        try {
+                            args[i] = objectMapper.readValue(request.getReader()
+                                    .lines().collect(Collectors.joining(System.lineSeparator())), param.getType());
+                        } catch (IOException e) {
+                            System.err.println(e.getMessage());
+                            throw new RuntimeException("Error reading request body", e);
+                        }
                     } else if (param.getType() == HttpServletRequest.class) {
                         args[i] = request;
                     } else {
@@ -100,7 +112,7 @@ public class EndPointService {
                 return (TinyResponse<?>) method.invoke(controller, args);
 
             } catch (Exception e) {
-                e.printStackTrace();
+                System.err.println(e.getMessage());
                 return TinyResponse.internalServerError("Error invoking endpoint method: " + e.getMessage());
             }
         };
@@ -129,6 +141,7 @@ public class EndPointService {
         try {
             return objectMapper.readValue(value, targetType);
         } catch (JsonProcessingException e) {
+            System.err.println(e.getMessage());
             throw new RuntimeException("Cannot convert value '" + value + "' to type " + targetType.getName(), e);
         }
     }

@@ -1,4 +1,4 @@
-package com.github.oxal.spring.enumeration.header;
+package com.github.oxal.spring.enumeration.param;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -6,7 +6,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-public @interface HeaderValue {
-    String value();
+@Target(ElementType.PARAMETER)
+public @interface RequestBody {
 }

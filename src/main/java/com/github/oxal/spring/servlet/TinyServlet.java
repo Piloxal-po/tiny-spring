@@ -40,18 +40,18 @@ public class TinyServlet {
     public record RouteDefinition(Pattern pattern, List<String> paramNames) {
         public static RouteDefinition fromPath(String path) {
             List<String> paramNames = new ArrayList<>();
-            Pattern paramPattern = Pattern.compile("\\{([^}]+)\\}");
+            Pattern paramPattern = Pattern.compile("\\{([^}]+)}");
             Matcher paramMatcher = paramPattern.matcher(path);
             while (paramMatcher.find()) {
                 paramNames.add(paramMatcher.group(1));
             }
-            String regexPath = path.replaceAll("\\{[^}]+\\}", "([^/]+)");
+            String regexPath = path.replaceAll("\\{[^}]+}", "([^/]+)");
             return new RouteDefinition(Pattern.compile("^" + regexPath + "$"), paramNames);
         }
     }
 
-    // Record to associate a route definition with its handler
-    public record Route(RouteDefinition definition, Function<HttpServletRequest, TinyResponse<?>> handler) {}
+    public record Route(RouteDefinition definition, Function<HttpServletRequest, TinyResponse<?>> handler) {
+    }
 
     public HttpServlet createServlet() {
         return new HttpServlet() {

@@ -1,51 +1,61 @@
 package com.github.oxal.spring.context;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.oxal.annotation.context.AfterContextLoad;
 import com.github.oxal.context.Context;
+import com.github.oxal.factory.BeanFactory;
+import com.github.oxal.object.KeyDefinition;
+import com.github.oxal.spring.configuration.SpringConfiguration;
 import com.github.oxal.spring.enumeration.Endpoint;
-import com.github.oxal.spring.service.EndPointService;
+import com.github.oxal.spring.factory.TomcatFactory;
+import com.github.oxal.spring.servlet.error.ErrorServlet;
 import io.github.classgraph.ScanResult;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.startup.Tomcat;
 
-import java.io.File;
 import java.util.List;
 
+@Slf4j
 public class LoadContext {
+    public static final int TOMCAT_LOAD = Integer.MAX_VALUE - 1000;
+    public static final int TOMCAT_RUN = Integer.MAX_VALUE;
 
     @AfterContextLoad(order = Integer.MIN_VALUE)
-    public void afterContextLoad(ScanResult scanResult, Context context) {
+    public void afterContextLoad(ScanResult scanResult) {
         List<Class<?>> endpoints = scanResult.getClassesWithAnnotation(Endpoint.class).loadClasses(true);
         for (Class<?> endpoint : endpoints) {
-            if (context.getBeanDefinitionKey(endpoint, null).isPresent()) {
-                System.out.printf("%s is loaded %n", endpoint.getName());
+            if (BeanFactory.loadBean(endpoint) != null) {
+                log.info("{} is loaded", endpoint.getName());
             } else {
-                System.err.printf("%s is not loaded %n", endpoint.getSimpleName());
+                log.warn("{} is not loaded", endpoint.getSimpleName());
             }
         }
     }
 
-    @AfterContextLoad(order = Integer.MAX_VALUE)
-    public void afterContextLoadApache(ScanResult scanResult, Context context) throws LifecycleException {
+    @AfterContextLoad(order = TOMCAT_LOAD)
+    public void afterContextLoadApache(ScanResult scanResult, Context context, SpringConfiguration springConfiguration, List<ErrorServlet> errorServlets) throws LifecycleException {
         List<Class<?>> endpoints = scanResult.getClassesWithAnnotation(Endpoint.class).loadClasses(true);
-        System.out.printf("%d endpoints found%n", endpoints.size());
+        log.info("{} endpoints found", endpoints.size());
 
-        Tomcat tomcat = new Tomcat();
-        tomcat.setPort(8080);
-        tomcat.getConnector(); // This is needed to initialize the connector
-
-        org.apache.catalina.Context ctx = tomcat.addContext("", new File(".").getAbsolutePath());
-
-        for (Class<?> endpoint : endpoints) {
-            String baseUrl = endpoint.getAnnotation(Endpoint.class).baseUrl();
-            String servletName = endpoint.getName();
-            
-            Tomcat.addServlet(ctx, servletName, EndPointService.buildEndpoint(endpoint, context));
-            ctx.addServletMappingDecoded(baseUrl + "/*", servletName);
-            System.out.printf("Mapping %s/* to %s%n", baseUrl, servletName);
+        if (context.getBeanDefinitions()
+                .keySet()
+                .stream().noneMatch(keyDefinition -> keyDefinition.getType().equals(ObjectMapper.class))) {
+            log.debug("Registering default ObjectMapper");
+            context.addBeanDefinitionByMethod(LoadContext.class, ObjectMapper.class, "objectMapper");
         }
 
+        Tomcat tomcat = TomcatFactory.create(springConfiguration, context, endpoints, errorServlets);
+        context.registerSingleton(KeyDefinition.builder().type(Tomcat.class).build(), tomcat);
+    }
+
+    @AfterContextLoad(order = TOMCAT_RUN)
+    public void afterContextRunApache(Tomcat tomcat) throws LifecycleException {
         tomcat.start();
         tomcat.getServer().await();
+    }
+
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
     }
 }
