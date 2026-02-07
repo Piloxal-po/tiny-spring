@@ -19,7 +19,6 @@ module com.github.oxal.tinyspring {
 
     // Lombok is a compile-time dependency, 'static' makes it optional at runtime.
     requires static lombok;
-    requires ch.qos.logback.core;
 
     // --- Service Provision ---
 
