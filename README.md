@@ -1,5 +1,7 @@
 # Tiny Spring
 
+[![](https://jitpack.io/v/Piloxal-po/tiny-spring.svg)](https://jitpack.io/#Piloxal-po/tiny-spring)
+
 **Tiny Spring** is a lightweight and modular Web framework for Java 21, designed as an extension
 of [Tiny Bean](https://github.com/Piloxal-po/tiny-bean). It provides an embedded Web server (Tomcat) and simplified REST
 endpoint management, mimicking the ease of use of Spring Boot but with a minimal footprint.
