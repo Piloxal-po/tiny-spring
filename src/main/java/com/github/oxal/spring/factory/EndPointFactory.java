@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.github.oxal.spring.utils.UrlUtils.buildUrl;
+
 public class EndPointFactory {
 
     public static HttpServlet buildEndpoint(Class<?> clazz, Context context) {
@@ -47,19 +49,19 @@ public class EndPointFactory {
             Function<HttpServletRequest, TinyResponse<?>> handler = createHandler(controllerInstance, method, objectMapper);
             if (method.isAnnotationPresent(Get.class)) {
                 Get annotation = method.getAnnotation(Get.class);
-                TinyServlet.RouteDefinition routeDef = TinyServlet.RouteDefinition.fromPath(annotation.value());
+                TinyServlet.RouteDefinition routeDef = TinyServlet.RouteDefinition.fromPath(buildUrl(annotation.value()));
                 getRoutes.add(new TinyServlet.Route(routeDef, handler));
             } else if (method.isAnnotationPresent(Post.class)) {
                 Post annotation = method.getAnnotation(Post.class);
-                TinyServlet.RouteDefinition routeDef = TinyServlet.RouteDefinition.fromPath(annotation.value());
+                TinyServlet.RouteDefinition routeDef = TinyServlet.RouteDefinition.fromPath(buildUrl(annotation.value()));
                 postRoutes.add(new TinyServlet.Route(routeDef, handler));
             } else if (method.isAnnotationPresent(Put.class)) {
                 Put annotation = method.getAnnotation(Put.class);
-                TinyServlet.RouteDefinition routeDef = TinyServlet.RouteDefinition.fromPath(annotation.value());
+                TinyServlet.RouteDefinition routeDef = TinyServlet.RouteDefinition.fromPath(buildUrl(annotation.value()));
                 putRoutes.add(new TinyServlet.Route(routeDef, handler));
             } else if (method.isAnnotationPresent(Delete.class)) {
                 Delete annotation = method.getAnnotation(Delete.class);
-                TinyServlet.RouteDefinition routeDef = TinyServlet.RouteDefinition.fromPath(annotation.value());
+                TinyServlet.RouteDefinition routeDef = TinyServlet.RouteDefinition.fromPath(buildUrl(annotation.value()));
                 deleteRoutes.add(new TinyServlet.Route(routeDef, handler));
             }
         }

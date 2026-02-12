@@ -5,6 +5,7 @@ import com.github.oxal.spring.configuration.ServerConfiguration;
 import com.github.oxal.spring.configuration.SpringConfiguration;
 import com.github.oxal.spring.enumeration.Endpoint;
 import com.github.oxal.spring.servlet.error.ErrorServlet;
+import com.github.oxal.spring.utils.UrlUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,7 +40,7 @@ public class TomcatFactory {
         configError(ctx, errorServlets);
 
         for (Class<?> endpoint : endpoints) {
-            String baseUrl = "/" + serverConfiguration.getBaseUrl() + endpoint.getAnnotation(Endpoint.class).baseUrl();
+            String baseUrl = UrlUtils.buildUrl(serverConfiguration.getBaseUrl(), endpoint.getAnnotation(Endpoint.class).baseUrl());
             String servletName = endpoint.getName();
 
             Tomcat.addServlet(ctx, servletName, EndPointFactory.buildEndpoint(endpoint, context));

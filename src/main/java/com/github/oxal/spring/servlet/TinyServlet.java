@@ -36,7 +36,6 @@ public class TinyServlet {
     @Builder.Default
     private List<Route> deleteRoutes = new ArrayList<>();
 
-    // Record to hold the compiled route pattern and parameter names
     public record RouteDefinition(Pattern pattern, List<String> paramNames) {
         public static RouteDefinition fromPath(String path) {
             List<String> paramNames = new ArrayList<>();
